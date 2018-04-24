@@ -10,15 +10,18 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
 http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
     <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
-    <db:derby-config name="Derby_Configuration" url="jdbc:derby:memory:muleEmbeddedDB;create=true" doc:name="Derby Configuration"/>
-    <jms:activemq-connector name="Active_MQ" brokerURL="tcp://localhost:61616" validateConnections="true" doc:name="Active MQ"/>
+    <db:derby-config name="Derby_Connector" url="jdbc:derby:memory:muleEmbeddedDB;create=true" doc:name="Derby Configuration"/>
+    <jms:activemq-connector name="Active_MQ" brokerURL="vm://localhost" validateConnections="true" doc:name="Active MQ"/>
+    <spring:beans>
+        <spring:bean id="Bean" name="DerbyBean" class="com.mulesoft.training.Database"/>
+    </spring:beans>
     <flow name="mavenFlow">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/hello" allowedMethods="GET" doc:name="HTTP"/>
         <set-payload value="#['Hello Maven']" doc:name="Set Payload"/>
     </flow>
     <flow name="retrieveFlights">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/flights" allowedMethods="GET" doc:name="HTTP"/>
-        <db:select config-ref="Derby_Configuration" doc:name="Derby_connector">
+        <db:select config-ref="Derby_Connector" doc:name="Derby_connector">
             <db:parameterized-query><![CDATA[SELECT * FROM FLIGHTS]]></db:parameterized-query>
         </db:select>
         <object-to-string-transformer doc:name="Object to String"/>
@@ -26,6 +29,6 @@ http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/
     </flow>
     <flow name="maven-projectFlow">
         <jms:inbound-endpoint queue="flights" connector-ref="Active_MQ" doc:name="JMS - Receive"/>
-        <logger level="INFO" doc:name="Logger"/>
+        <logger level="INFO" doc:name="Logger" message="#[payload]"/>
     </flow>
 </mule>
